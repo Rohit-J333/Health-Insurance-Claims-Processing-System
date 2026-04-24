@@ -9,7 +9,7 @@ export default function Dashboard() {
   const [claims, setClaims] = useState<ClaimSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [testRunning, setTestRunning] = useState(false);
-  const [testResult, setTestResult] = useState<{ summary: string; results: Array<{ case_id: string; case_name: string; passed: boolean }> } | null>(null);
+  const [testResult, setTestResult] = useState<{ summary: string; results: Array<{ case_id: string; case_name: string; passed: boolean; decision?: { claim_id: string } }> } | null>(null);
 
   useEffect(() => {
     listClaims()
@@ -71,20 +71,27 @@ export default function Dashboard() {
         <div className="p-4 bg-gray-50 border rounded-lg">
           <h3 className="font-semibold text-gray-900 mb-3">{testResult.summary}</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {testResult.results.map((r) => (
-              <div
-                key={r.case_id}
-                className={`p-2 rounded text-sm ${
-                  r.passed
-                    ? "bg-green-50 border border-green-200 text-green-800"
-                    : "bg-red-50 border border-red-200 text-red-800"
-                }`}
-              >
-                <span className="font-mono">{r.case_id}</span>
-                <span className="ml-1">{r.passed ? "PASS" : "FAIL"}</span>
-                <p className="text-xs opacity-75 truncate">{r.case_name}</p>
-              </div>
-            ))}
+            {testResult.results.map((r) => {
+              const inner = (
+                <>
+                  <span className="font-mono">{r.case_id}</span>
+                  <span className="ml-1">{r.passed ? "PASS" : "FAIL"}</span>
+                  <p className="text-xs opacity-75 truncate">{r.case_name}</p>
+                </>
+              );
+              const cls = `p-2 rounded text-sm ${
+                r.passed
+                  ? "bg-green-50 border border-green-200 text-green-800"
+                  : "bg-red-50 border border-red-200 text-red-800"
+              }`;
+              return r.decision?.claim_id ? (
+                <Link key={r.case_id} to={`/claims/${r.decision.claim_id}`} className={`${cls} hover:opacity-80 block`}>
+                  {inner}
+                </Link>
+              ) : (
+                <div key={r.case_id} className={cls}>{inner}</div>
+              );
+            })}
           </div>
         </div>
       )}

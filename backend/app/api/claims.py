@@ -104,7 +104,7 @@ async def get_policy_info():
 
 
 @router.post("/test/run-all")
-async def run_all_tests():
+async def run_all_tests(db: Session = Depends(get_db)):
     """Run all 12 test cases and return results."""
     with open(TEST_CASES_PATH, "r") as f:
         test_data = json.load(f)
@@ -117,6 +117,21 @@ async def run_all_tests():
             submission = _build_submission_from_test_case(tc)
             orchestrator = OrchestratorAgent(policy)
             decision = await orchestrator.process(submission)
+
+            # Persist to database so the detail page works
+            record = ClaimRecord(
+                claim_id=decision.claim_id,
+                member_id=submission.member_id,
+                claim_category=submission.claim_category.value,
+                treatment_date=str(submission.treatment_date),
+                claimed_amount=submission.claimed_amount,
+                decision=decision.decision.value if decision.decision else None,
+                approved_amount=decision.approved_amount,
+                confidence_score=decision.confidence_score,
+                decision_json=decision.model_dump(mode="json"),
+            )
+            db.merge(record)
+            db.commit()
 
             # Evaluate against expected
             expected = tc["expected"]
