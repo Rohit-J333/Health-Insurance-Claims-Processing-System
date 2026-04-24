@@ -8,9 +8,6 @@ Checks:
 
 from __future__ import annotations
 
-from collections import Counter
-from datetime import datetime
-
 from app.models.schemas import ClaimHistoryItem, FraudResult, FraudSignal
 from app.services.policy_loader import PolicyLoader
 from app.services.trace_logger import TraceLogger

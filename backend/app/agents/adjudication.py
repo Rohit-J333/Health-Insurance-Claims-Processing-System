@@ -318,7 +318,7 @@ class AdjudicationAgent:
                     )
                     self.trace.failed(
                         AGENT_NAME,
-                        f"exclusion_line_item",
+                        "exclusion_line_item",
                         f"'{item.description}' is an excluded dental procedure ({excl_match}).",
                     )
                 else:
@@ -333,7 +333,7 @@ class AdjudicationAgent:
                     )
                     self.trace.passed(
                         AGENT_NAME,
-                        f"exclusion_line_item",
+                        "exclusion_line_item",
                         f"'{item.description}' is a covered dental procedure.",
                     )
 

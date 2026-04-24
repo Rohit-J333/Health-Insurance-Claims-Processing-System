@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -19,7 +18,7 @@ from app.models.schemas import (
     ClaimSummary,
     DocumentInput,
 )
-from app.services.policy_loader import PolicyLoader, get_policy
+from app.services.policy_loader import get_policy
 
 router = APIRouter()
 
@@ -226,17 +225,9 @@ def _evaluate_test_case(
     # Check system_must requirements (basic text matching on notes/errors)
     if "system_must" in expected:
         for requirement in expected["system_must"]:
-            # Check if the requirement is reflected in the output
-            all_text = " ".join([
-                *decision.notes,
-                *[e.message for e in decision.document_errors],
-                *[li.reason or "" for li in decision.line_item_decisions],
-                *[s.details for s in (decision.trace.steps if decision.trace else [])],
-            ]).lower()
-            # Simple heuristic: at least some key words match
             checks.append({
                 "check": f"system_must: {requirement[:60]}",
-                "passed": True,  # Manual review needed for semantic checks
+                "passed": True,  # Semantic check — manual verification needed
                 "note": "Requires manual verification",
             })
 
