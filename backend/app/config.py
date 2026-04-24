@@ -22,7 +22,7 @@ DB_PATH = BASE_DIR / "claims.db"
 
 # LLM
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-001")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # Server
 HOST = os.getenv("HOST", "0.0.0.0")
