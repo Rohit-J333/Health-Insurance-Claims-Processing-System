@@ -38,6 +38,14 @@ export async function getClaim(claimId: string): Promise<ClaimDecision> {
   return data;
 }
 
+export async function deleteClaim(claimId: string): Promise<void> {
+  await api.delete(`/claims/${claimId}`);
+}
+
+export async function deleteAllClaims(): Promise<void> {
+  await api.delete("/claims");
+}
+
 export async function getPolicy(): Promise<Record<string, unknown>> {
   const { data } = await api.get("/policy");
   return data;

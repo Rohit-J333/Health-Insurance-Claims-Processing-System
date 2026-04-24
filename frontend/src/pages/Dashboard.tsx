@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Plus, PlayCircle, Loader2 } from "lucide-react";
-import { listClaims, runAllTests } from "../api";
+import { FileText, Plus, PlayCircle, Loader2, Trash2 } from "lucide-react";
+import { listClaims, runAllTests, deleteClaim, deleteAllClaims } from "../api";
 import type { ClaimSummary } from "../types";
 import DecisionBadge from "../components/DecisionBadge";
 
@@ -24,13 +24,32 @@ export default function Dashboard() {
     try {
       const result = await runAllTests();
       setTestResult(result);
-      // Refresh claims list
       const updated = await listClaims();
       setClaims(updated);
     } catch (err) {
       console.error(err);
     } finally {
       setTestRunning(false);
+    }
+  }
+
+  async function handleDeleteClaim(claimId: string) {
+    try {
+      await deleteClaim(claimId);
+      setClaims((prev) => prev.filter((c) => c.claim_id !== claimId));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleDeleteAll() {
+    if (!confirm("Delete all claims from the dashboard?")) return;
+    try {
+      await deleteAllClaims();
+      setClaims([]);
+      setTestResult(null);
+    } catch (err) {
+      console.error(err);
     }
   }
 
@@ -45,6 +64,14 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex gap-3">
+          {claims.length > 0 && (
+            <button
+              onClick={handleDeleteAll}
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm hover:bg-red-100 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" /> Clear All
+            </button>
+          )}
           <button
             onClick={handleRunTests}
             disabled={testRunning}
@@ -74,9 +101,13 @@ export default function Dashboard() {
             {testResult.results.map((r) => {
               const inner = (
                 <>
-                  <span className="font-mono">{r.case_id}</span>
-                  <span className="ml-1">{r.passed ? "PASS" : "FAIL"}</span>
-                  <p className="text-xs opacity-75 truncate">{r.case_name}</p>
+                  <div className="flex items-center gap-1 font-medium">
+                    <span className="font-mono text-xs">{r.case_id}</span>
+                    <span className={`text-xs px-1 rounded ${r.passed ? "bg-green-200 text-green-900" : "bg-red-200 text-red-900"}`}>
+                      {r.passed ? "PASS" : "FAIL"}
+                    </span>
+                  </div>
+                  <p className="text-xs mt-1 leading-tight">{r.case_name}</p>
                 </>
               );
               const cls = `p-2 rounded text-sm ${
@@ -85,7 +116,7 @@ export default function Dashboard() {
                   : "bg-red-50 border border-red-200 text-red-800"
               }`;
               return r.decision?.claim_id ? (
-                <Link key={r.case_id} to={`/claims/${r.decision.claim_id}`} className={`${cls} hover:opacity-80 block`}>
+                <Link key={r.case_id} to={`/claims/${r.decision.claim_id}`} className={`${cls} hover:opacity-75 block`}>
                   {inner}
                 </Link>
               ) : (
@@ -121,6 +152,7 @@ export default function Dashboard() {
                 <th className="py-3 px-4 text-gray-500 font-medium">Approved</th>
                 <th className="py-3 px-4 text-gray-500 font-medium">Decision</th>
                 <th className="py-3 px-4 text-gray-500 font-medium">Confidence</th>
+                <th className="py-3 px-4"></th>
               </tr>
             </thead>
             <tbody>
@@ -153,6 +185,15 @@ export default function Dashboard() {
                         {(claim.confidence_score * 100).toFixed(0)}%
                       </span>
                     ) : "—"}
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() => handleDeleteClaim(claim.claim_id)}
+                      className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -96,6 +96,25 @@ async def upload_document(file: UploadFile = File(...)):
     return {"file_id": unique_id, "file_path": str(file_path)}
 
 
+@router.delete("/claims/{claim_id}")
+async def delete_claim(claim_id: str, db: Session = Depends(get_db)):
+    """Delete a claim record."""
+    record = db.query(ClaimRecord).filter(ClaimRecord.claim_id == claim_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    db.delete(record)
+    db.commit()
+    return {"deleted": claim_id}
+
+
+@router.delete("/claims")
+async def delete_all_claims(db: Session = Depends(get_db)):
+    """Delete all claim records."""
+    db.query(ClaimRecord).delete()
+    db.commit()
+    return {"deleted": "all"}
+
+
 @router.get("/policy")
 async def get_policy_info():
     """Get policy terms."""
@@ -118,9 +137,13 @@ async def run_all_tests(db: Session = Depends(get_db)):
             orchestrator = OrchestratorAgent(policy)
             decision = await orchestrator.process(submission)
 
-            # Persist to database so the detail page works
+            # Use deterministic claim_id so re-runs overwrite the same record
+            stable_id = f"CLM-TEST-{tc['case_id']}"
+            decision_data = decision.model_dump(mode="json")
+            decision_data["claim_id"] = stable_id
+
             record = ClaimRecord(
-                claim_id=decision.claim_id,
+                claim_id=stable_id,
                 member_id=submission.member_id,
                 claim_category=submission.claim_category.value,
                 treatment_date=str(submission.treatment_date),
@@ -128,7 +151,7 @@ async def run_all_tests(db: Session = Depends(get_db)):
                 decision=decision.decision.value if decision.decision else None,
                 approved_amount=decision.approved_amount,
                 confidence_score=decision.confidence_score,
-                decision_json=decision.model_dump(mode="json"),
+                decision_json=decision_data,
             )
             db.merge(record)
             db.commit()
@@ -142,7 +165,7 @@ async def run_all_tests(db: Session = Depends(get_db)):
                 "case_name": tc["case_name"],
                 "passed": passed["all_passed"],
                 "checks": passed["checks"],
-                "decision": decision.model_dump(mode="json"),
+                "decision": decision_data,
             })
         except Exception as e:
             results.append({
