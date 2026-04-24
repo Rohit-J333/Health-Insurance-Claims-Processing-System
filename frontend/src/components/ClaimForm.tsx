@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { submitClaim } from "../api";
+import { submitClaim, uploadDocument } from "../api";
 import type { ClaimDecision, ClaimSubmission, DocumentInput } from "../types";
 import { CLAIM_CATEGORIES, DOCUMENT_TYPES } from "../types";
 
@@ -32,18 +32,38 @@ export default function ClaimForm({ onResult }: Props) {
   const [simulateFailure, setSimulateFailure] = useState(false);
 
   const [documents, setDocuments] = useState<DocumentInput[]>([
-    { file_id: "F001", file_name: "prescription.jpg", actual_type: "PRESCRIPTION" },
-    { file_id: "F002", file_name: "hospital_bill.jpg", actual_type: "HOSPITAL_BILL" },
+    { file_id: "F001", actual_type: "PRESCRIPTION" },
+    { file_id: "F002", actual_type: "HOSPITAL_BILL" },
   ]);
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
 
   const reqs = DOC_REQUIREMENTS[category];
+
+  async function handleFileChange(index: number, file: File | null) {
+    if (!file) return;
+    setUploadingIdx(index);
+    setError(null);
+    try {
+      const result = await uploadDocument(file);
+      setDocuments((prev) =>
+        prev.map((doc, i) =>
+          i === index
+            ? { ...doc, file_id: result.file_id, file_name: result.file_path }
+            : doc
+        )
+      );
+    } catch {
+      setError("File upload failed. Please try again.");
+    } finally {
+      setUploadingIdx(null);
+    }
+  }
 
   function addDocument() {
     setDocuments((prev) => [
       ...prev,
       {
         file_id: `F${String(prev.length + 1).padStart(3, "0")}`,
-        file_name: "",
         actual_type: "PRESCRIPTION",
       },
     ]);
@@ -200,13 +220,30 @@ export default function ClaimForm({ onResult }: Props) {
         <div className="space-y-2">
           {documents.map((doc, i) => (
             <div key={i} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
-              <input
-                type="text"
-                value={doc.file_name || ""}
-                onChange={(e) => updateDocument(i, "file_name", e.target.value)}
-                placeholder="File name"
-                className="flex-1 px-2 py-1 text-sm border rounded"
-              />
+              <label className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
+                <span className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 whitespace-nowrap shrink-0">
+                  {uploadingIdx === i ? (
+                    <span className="flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Uploading…
+                    </span>
+                  ) : (
+                    "Choose file"
+                  )}
+                </span>
+                <span className="text-sm text-gray-500 truncate">
+                  {doc.file_name
+                    ? doc.file_name.replace(/\\/g, "/").split("/").pop()
+                    : "No file chosen"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  disabled={uploadingIdx !== null}
+                  onChange={(e) => handleFileChange(i, e.target.files?.[0] ?? null)}
+                />
+              </label>
               <select
                 value={doc.actual_type}
                 onChange={(e) => updateDocument(i, "actual_type", e.target.value)}

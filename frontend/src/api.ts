@@ -10,6 +10,17 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+export async function uploadDocument(file: File): Promise<{ file_id: string; file_path: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  // Use raw axios so browser sets Content-Type with multipart boundary
+  const { data } = await axios.post<{ file_id: string; file_path: string }>(
+    `${API_BASE}/claims/upload`,
+    formData,
+  );
+  return data;
+}
+
 export async function submitClaim(
   submission: ClaimSubmission
 ): Promise<ClaimDecision> {
