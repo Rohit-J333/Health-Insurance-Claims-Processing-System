@@ -62,7 +62,7 @@ python eval/run_eval.py
 
 This generates `eval/EVAL_REPORT.md` with pass/fail details, decision values, and confidence scores per case.
 
-## Project layout
+## Project-layout
 
 ```
 plum/
