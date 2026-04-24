@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.agents.orchestrator import OrchestratorAgent
-from app.config import TEST_CASES_PATH
+from app.config import TEST_CASES_PATH, UPLOADS_DIR
 from app.models.database import ClaimRecord, get_db
 from app.models.schemas import (
     ClaimCategory,
@@ -85,12 +85,9 @@ async def get_claim(claim_id: str, db: Session = Depends(get_db)):
 @router.post("/claims/upload")
 async def upload_document(file: UploadFile = File(...)):
     """Upload a document image or PDF for LLM extraction."""
-    uploads_dir = Path("uploads")
-    uploads_dir.mkdir(exist_ok=True)
-
     unique_id = uuid4().hex[:8]
     suffix = Path(file.filename or "upload").suffix or ".jpg"
-    file_path = uploads_dir / f"{unique_id}{suffix}"
+    file_path = UPLOADS_DIR / f"{unique_id}{suffix}"
 
     content = await file.read()
     with open(file_path, "wb") as f:
